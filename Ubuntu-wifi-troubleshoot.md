@@ -39,6 +39,7 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 
 
 **Solutions**
+- [x] Moving to older kernel and disabling powersave worked
 - [x] (didn't work) Try disabling fast-boot, boot into windows as first option, force wifi to turn on once and see if it lasts after restarts and shutdowns
   - then boot into Ubuntu as first option and see if wifi survives
 - [x] (didn't work) Use the ubuntu's [Boot repair](https://help.ubuntu.com/community/Boot-Repair) to prevent windows and Ubuntu from stepping on each other's hibernation disk images while starting up
