@@ -1,7 +1,7 @@
 ---
 title: Ubuntu-wifi-troubleshoot
 created: '2021-11-24T17:57:44.815Z'
-modified: '2021-11-27T05:41:21.082Z'
+modified: '2021-11-27T10:02:47.243Z'
 ---
 
 # Ubuntu-wifi-troubleshoot
@@ -38,8 +38,15 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 - Could be affected by the model of wifi adapter - having some internal switch off things or harder to wake up from hibernation without re-loading firmware or doing clean restart..
 
 
-**Solutions**
-- [x] Moving to older kernel and disabling powersave worked
+## What worked
+- Did a complete reinstall of Ubuntu - replacing the old installation. Suspected a UEFI/GPT -- BIOS/MBR mix up the first time, so just to make sure. Did not fix the problem;
+_Discovered that safe-mode with old kernel works, then realized that the old kernel was all that was needed_
+- [x] Moving to older kernel and disabling powersave worked : Wifi works in both Ubuntu and Windows (cross-restarts tested twice)
+  - Use kernel `5.11.0.27` and remove all other kernels that didn't work (`5.11.0.40` ..)
+  - Disabling powersave likely helped : Change wifi.powersave to 2 in `/etc/NetworkManager/conf.d/default-wifi-powersave-on.conf`
+
+
+**Other stuff to try**
 - [x] (didn't work) Try disabling fast-boot, boot into windows as first option, force wifi to turn on once and see if it lasts after restarts and shutdowns
   - then boot into Ubuntu as first option and see if wifi survives
 - [x] (didn't work) Use the ubuntu's [Boot repair](https://help.ubuntu.com/community/Boot-Repair) to prevent windows and Ubuntu from stepping on each other's hibernation disk images while starting up
@@ -92,8 +99,8 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 
 Fixes to try
 
-- [x] (fixes wifi once, didn't work after reboot or second safe-mode trip :angry:) Boot into ubuntu with advanced options for ubuntu (2nd option in the grub menu)
-  - _(didn't work for me)_ Try to run with an older kernel if visible there, (going onto `5.11.0.27` instead of `5.11.0.40`) else
+- [x] (fixes wifi once, didn't work after reboot or second safe-mode trip :angry:) Boot into ubuntu with advanced options for ubuntu (2nd option in the grub menu). **Turns out the fix was due to just being in an older kernel and not due to the safe-mode**
+  - _(didn't work for me)_ Try to run with an older kernel if visible there, (going onto **`5.11.0.27`** instead of `5.11.0.40`) else
   - run in safe mode with any kernel (_older might be better_), brings the `recovery menu`. click on `network` (_I did notice something failed..message after running this although this didn't affect the outcome_)
     - `system-summary` didn't show any information under the `--detailed network configuration--` section
   - Now select `resume` to boot into ubuntu, the wifi works right now! _(notice the super tiny screen upon login - might be a indication of safe-mode booting, adjust scaling to 200% to get decent icons)_
