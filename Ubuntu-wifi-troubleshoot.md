@@ -1,7 +1,7 @@
 ---
 title: Ubuntu-wifi-troubleshoot
 created: '2021-11-24T17:57:44.815Z'
-modified: '2021-11-26T20:07:32.126Z'
+modified: '2021-11-27T05:41:21.082Z'
 ---
 
 # Ubuntu-wifi-troubleshoot
@@ -28,7 +28,7 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 - Since grub boots first, this is affecting windows too?
 - It could have been a kernel update in ubuntu that triggered this
 
-### Intel's Killer 6 AX500 and other killer series could have internal switches that are hard to wake up from
+### Intel's Killer 6 AX500 and other killer series could have internal low power states that are hard to wake up from
 - So they could have problems in windows only situations too, could interact with hibernation, fast-boot etc. and show problems more frequently
 - Keeping system off for 20 hrs time or removing battery for 15 mins etc. are draining the wifi adapter causing it to restart cleanly when computer is powered on again, causing it to work (unless one of the above problems interfere)
 
@@ -39,9 +39,11 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 
 
 **Solutions**
-1. Try disabling fast-boot, boot into windows as first option, force wifi to turn on once and see if it lasts after restarts and shutdowns
+- [x] (didn't work) Try disabling fast-boot, boot into windows as first option, force wifi to turn on once and see if it lasts after restarts and shutdowns
   - then boot into Ubuntu as first option and see if wifi survives
-2. Use the ubuntu's [Boot repair](https://help.ubuntu.com/community/Boot-Repair) to prevent windows and Ubuntu from stepping on each other's hibernation disk images while starting up
+- [x] (didn't work) Use the ubuntu's [Boot repair](https://help.ubuntu.com/community/Boot-Repair) to prevent windows and Ubuntu from stepping on each other's hibernation disk images while starting up
+- [ ] try kernel 5.14.2
+- [ ] Follow linux [troubleshooting guide](https://help.ubuntu.com/community/WifiDocs/WirelessTroubleShootingGuide/Drivers)
 
 ## Fastboot from Windows is the problem?
 - [ ] disable fastboot and see if that helps?
@@ -67,13 +69,16 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 
 - quick commands to check network status,
   - shows network hardware details `sudo lshw -C network` [askubuntu](https://askubuntu.com/questions/1347951/wireless-adapter-unclaimed-after-update-and-reboot)
-  - network related again `sudo rfkill list all`
+  - Shows if network is hardblocked: `sudo rfkill list all`
   - shows the network hardware details `lspci -nnk | grep -A2 0280` | `lspci` shows all the hardware connected
   - restart kernel configuration - `sudo service network-manager restart`
 - others
   - check kernel version `uname -r`
   - Check firmware version `sudo dmidecode | more` or `apt list | grep linux-firmware` [r/Ubuntu](https://www.reddit.com/r/Ubuntu/comments/ag65on/how_to_check_the_version_number_of_linuxfirmware/)
-  
+  - check BIOS version `sudo dmidecode -s bios-version`
+  - list all installed kernels - `apt list | grep linux-image | grep installed`
+  - (too long list) You can see a full list of available kernels with `apt list linux-image*` 
+
 - more commands
   > If your wireless has worked on this install before, and you want to troubleshoot a connection:
       - nm-tool will give you a report on the state of your network manager and any attached devices.
@@ -81,9 +86,10 @@ The problem is probably an interaction of multiple hypothesis written here, so m
       - ifdown and ifup will bring network interfaces up and down. If you've changed settings, stopping and starting (as root) with ifdown wlan0 and ifup wlan0 may help.
       - Not sure what your network interfaces are even called? Try ifconfig -a [askubuntu](https://askubuntu.com/a/425166/841719)
       - If you aren't sure you even have drivers installed, find out with lshw if your wireless card is built in, or lspci (for PCI cards -- less likely these days) or lsusb (for a USB wireless device). lshw -C network will display details of hardware in the "network" class, which is what you want. Again, you may need to run this as root. 
+  - you can get more information by running `journalctl --follow` in a terminal window. Then, when your WiFi drops, look at the messages.
 - [Ubuntu wireless troubleshooting guide](https://help.ubuntu.com/community/WifiDocs/WirelessTroubleShootingGuide)
 
-
+Fixes to try
 
 - [x] (fixes wifi once, didn't work after reboot or second safe-mode trip :angry:) Boot into ubuntu with advanced options for ubuntu (2nd option in the grub menu)
   - _(didn't work for me)_ Try to run with an older kernel if visible there, (going onto `5.11.0.27` instead of `5.11.0.40`) else
@@ -96,7 +102,7 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 [askubuntu](https://askubuntu.com/questions/1280328/ubuntu-20-04-killer-ax500s-dbs-drivers-support)
   - Downloaded this on another ubuntu and onto a pendrive and installed it in the problematic computer
   1. on an ubuntu with internet, ensure that focal-fossa mirrors are accessed by apt-get. open `etc/apt/sources.list` as admin in gedit/text editor, add this line `deb http://mirrors.kernel.org/ubuntu focal-updates main` at the end _(remove this line after the task is done if your OS is not focal-fossa version)_ 
-  2. Use this to download the package (not install) onto a local folder, `cd desired/folder` ; `apt-get -d -o dir::cache=`pwd` -o Debug::NoLocking=1 install boot-repair` and copy it into a USB drive. _Source:_ [superuser](https://superuser.com/questions/588167/apt-get-d-download-to-a-specific-directory) 
+  2. Use this to download the package (not install) onto a local folder, `cd desired/folder` ; `apt-get -d -o dir::cache=`pwd` -o Debug::NoLocking=1 install linux-oem-20,04-edge` and copy it into a USB drive. _Source:_ [superuser](https://superuser.com/questions/588167/apt-get-d-download-to-a-specific-directory) 
   3. Plug USB into problem ubuntu and `mv the folder` into a local folder, `cd` into it and install using `dpkg -i archives/*.deb`
   - Can follow up by updating the firmware to [latest](https://launchpad.net/ubuntu/+source/linux-firmware/1.187.20)
 
@@ -104,16 +110,31 @@ The problem is probably an interaction of multiple hypothesis written here, so m
   > soundcard cannot be loaded : `snd_hda_intel_..`
   > something else I forgot..
 
-- [ ] involves some kernel changes/updates : v 5.10
-> still has issues with WIFI not working after suspend
-[medium](https://medium.com/@tomas.heiskanen/dell-xps-15-9500-wifi-on-ubuntu-20-04-d5f1c218e78a)
+- [ ] Some kernel changes/updates can break wifi/other hardware connections: v 5.10
+  - [x] clone and install a dev version of the kernel and firmware for ath11k (wifi drivers) 
+  > still has issues with WIFI not working after suspend [medium](https://medium.com/@tomas.heiskanen/dell-xps-15-9500-wifi-on-ubuntu-20-04-d5f1c218e78a)
+  - [askubuntu](https://askubuntu.com/questions/1354440/wifi-adapter-not-working-on-xps-13-9310-ubuntu-20-04?rq=1) answer says other things to experiment with
+  > update the firmware of the device with `fwupdmgr refresh --force && fwupdmgr upgrade`
+
+  - (doesn't work) How to check the latest kernel :  `apt-cache policy linux-generic-*` 
+    - (too long list) You can see a full list of available kernels with `apt list linux-image*`
+- [ ] try specific kernel versions that are known to work
+  - People say it works in [5.14.2](https://bugzilla.kernel.org/show_bug.cgi?id=214455); [5.11.0.36-generic](https://www.reddit.com/r/Dell/comments/pwpg1w/linux_kernel_511037generic_breaks_wifi_and_bt_on/)
+  > [finding and installing kernels](https://linuxhint.com/update_ubuntu_kernel_20_04/#google_vignette)
+- [ ] ath11k drivers wifi [wiki](https://wireless.wiki.kernel.org/en/users/drivers/ath11k/installation)
+
+ other stunts
+  > I had to disable the chip in bios, reboot, and re-enable before the card would be recognized by the system again. [bugzilla](https://bugzilla.kernel.org/show_bug.cgi?id=214455)
+ - [x] Change wifi.powersave to 2 in `/etc/NetworkManager/conf.d/default-wifi-powersave-on.conf`
+  > I recall doing this on Thinkpad or Surface's Ubuntu which likely fixed wifi dropping intermittently when idle for 10 mins or so
+
 
 - [ ] `Fn + F2` seems to be a toggle switch for WIFI hardware [askubuntu](https://askubuntu.com/questions/176897/how-do-i-toggle-the-wifi-hardware-switch-for-a-dell-xps-17-l702x)
 
 
 
 
-## BIOS/general solutions
+## BIOS-bootloader-general solutions
 
 - [x] (?) BIOS defaults reset
 > F12 -> hardware scan -> restart. F2 -> BIOS defaults. Network adapter shows up after this. Rep says drivers were OK, BIOS is causing the issue.
@@ -128,6 +149,11 @@ The problem is probably an interaction of multiple hypothesis written here, so m
 
   - This above post has lots of information specific to Dell 9500 with all sorts of linuxes dual booted
 
+- [ ] replace GRUB bootloader with [rEFInd](https://teejeetech.com/2020/09/05/linux-multi-boot-with-refind/)
+> I came across rEFInd five years ago, and it was one of those things that solved a lot of headaches for me. Many years later, I’m often surprised by how few people are aware of it, and how many people still struggle with GRUB for booting their Linux systems. 
+> EFI systems have not reason to use GRUB -- which is good for legacy BIOS compatibility
+> GRUB is both a boot loader and a boot manager. Refind is only a boot manager -- cleaner separation of tasks ; no interference of GRUB in Windows I guess
+> Does rEFInd work with Windows? [Superuser](https://superuser.com/questions/1133040/unable-to-boot-into-windows-10-with-refind-solved) troubleshooting guidelines
 
 
 ## Intel's troubleshooting guide
